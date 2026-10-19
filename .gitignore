@@ -1,0 +1,22 @@
+# --- Entorno virtual de Python ---
+.venv/
+
+# --- Archivos temporales de Python ---
+__pycache__/
+*.pyc
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- Datos (se regeneran ejecutando los scripts) ---
+data/
+
+# --- Claves y configuración privada ---
+.env
+
+# --- Archivos del sistema y de programas ---
+.DS_Store
+~$*
+
+# --- Configuración local de Claude Code ---
+.claude/settings.local.json
