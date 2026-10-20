@@ -109,6 +109,34 @@ def limpiar_generacion():
     return df
 
 
+def limpiar_emisiones():
+    """Emisiones diarias totales de CO2 equivalente: una fila por día, en toneladas.
+
+    Solo se usa la serie del total de la API. El desglose por tecnología y la intensidad
+    (tCO2 eq./MWh) de la API son incoherentes en 2020-2021, así que no se guardan.
+    La intensidad se calculará después como emisiones / generación.
+    """
+    df = pd.read_csv(CARPETA_RAW / "emisiones.csv")
+
+    # Nos quedamos solo con la serie del total
+    df = df[df["serie"] == "Total tCO2 eq."].copy()
+    comprobar(len(df) > 0, "no se encuentra la serie 'Total tCO2 eq.'")
+
+    df["fecha"] = pd.to_datetime(df["datetime"].str[:10], format="%Y-%m-%d")
+    df = df.rename(columns={"value": "emisiones_tco2"})
+
+    df = df[["fecha", "emisiones_tco2"]].sort_values("fecha").reset_index(drop=True)
+
+    # Comprobaciones del resultado
+    dias_esperados = pd.date_range(FECHA_INICIO, FECHA_FIN, freq="D")
+    comprobar(not df["fecha"].duplicated().any(), "hay fechas repetidas")
+    comprobar(set(df["fecha"]) == set(dias_esperados), "faltan o sobran días en el periodo")
+    comprobar(df["emisiones_tco2"].notna().all(), "hay emisiones vacías")
+    comprobar((df["emisiones_tco2"] > 0).all(), "hay emisiones menores o iguales a 0")
+
+    return df
+
+
 # --- Programa principal ---
 
 def main():
@@ -117,6 +145,9 @@ def main():
 
     print("generacion:")
     guardar(limpiar_generacion(), "generacion")
+
+    print("emisiones:")
+    guardar(limpiar_emisiones(), "emisiones")
 
     print("\nLimpieza terminada.")
 
