@@ -70,11 +70,53 @@ def limpiar_demanda():
     return df
 
 
+def limpiar_generacion():
+    """Generación diaria por tecnología: una fila por día y tecnología, en MWh."""
+    df = pd.read_csv(CARPETA_RAW / "generacion.csv")
+    df["fecha"] = pd.to_datetime(df["datetime"].str[:10], format="%Y-%m-%d")
+
+    # "Fuel + Gas" solo tiene valores de ±0,001 MWh (ruido de redondeo): se elimina.
+    # Antes comprobamos que sigue siendo ruido, por si algún día trae valores reales.
+    fuel_gas = df["serie"] == "Fuel + Gas"
+    comprobar((df.loc[fuel_gas, "value"].abs() < 1).all(), "'Fuel + Gas' tiene valores de 1 MWh o más")
+    df = df[~fuel_gas]
+
+    # Separamos el total de la API de las tecnologías
+    es_total = df["serie"] == "Generación total"
+    total_api = df[es_total].set_index("fecha")["value"]
+    df = df[~es_total]
+
+    # Control: la suma de las tecnologías de cada día debe coincidir con el total de la API
+    # (tolerancia de 1 MWh por los redondeos)
+    suma_tecnologias = df.groupby("fecha")["value"].sum()
+    diferencia = (suma_tecnologias - total_api).abs()
+    comprobar((diferencia < 1).all(), "la suma de las tecnologías no coincide con el total de la API")
+
+    # Nombres que dicen qué es cada columna y en qué unidad está
+    df = df.rename(columns={"serie": "tecnologia", "value": "generacion_mwh"})
+
+    # Columnas útiles, ordenadas por fecha y tecnología
+    df = df[["fecha", "tecnologia", "tipo", "generacion_mwh"]]
+    df = df.sort_values(["fecha", "tecnologia"]).reset_index(drop=True)
+
+    # Comprobaciones del resultado
+    dias_esperados = pd.date_range(FECHA_INICIO, FECHA_FIN, freq="D")
+    comprobar(not df.duplicated(["fecha", "tecnologia"]).any(), "hay combinaciones fecha-tecnología repetidas")
+    comprobar(set(df["tipo"]) == {"Renovable", "No-Renovable"}, f"tipos inesperados: {set(df['tipo'])}")
+    comprobar(set(df["fecha"]) == set(dias_esperados), "faltan o sobran días en el periodo")
+    comprobar(df["generacion_mwh"].notna().all(), "hay generaciones vacías")
+
+    return df
+
+
 # --- Programa principal ---
 
 def main():
     print("demanda:")
     guardar(limpiar_demanda(), "demanda")
+
+    print("generacion:")
+    guardar(limpiar_generacion(), "generacion")
 
     print("\nLimpieza terminada.")
 
