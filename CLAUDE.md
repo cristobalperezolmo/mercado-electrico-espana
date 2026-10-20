@@ -20,10 +20,13 @@ Preguntas del análisis:
 - Python (requests, pandas) en VS Code: extracción y limpieza
 - PostgreSQL + DBeaver: almacenamiento y análisis SQL
 - Excel para Mac (Power Query, tablas dinámicas): análisis complementario
-- Power BI Service (versión web, en el navegador): dashboard final.
-  Power BI Desktop NO está disponible en Mac y no uso máquina virtual.
+- Streamlit (Python): dashboard web principal, publicado gratis en Streamlit Community Cloud
+  con enlace público. Lee tablas resumidas guardadas en el repositorio
+  (la web publicada no puede conectarse a la PostgreSQL local).
+- Power BI Service (versión web, en el navegador): complemento, si consigo una cuenta
+  de trabajo o universidad. Power BI Desktop NO está disponible en Mac y no uso máquina virtual.
   Fuente de datos para Power BI: tablas finales exportadas de PostgreSQL a Excel, guardado en OneDrive.
-- Git + GitHub: control de versiones y publicación (el dashboard se mostrará con capturas y vídeo en el README)
+- Git + GitHub: control de versiones y publicación (el informe de Power BI, si se hace, se mostrará con capturas y vídeo en el README)
 
 ## Fases
 1. Preparación del entorno y repositorio
@@ -32,7 +35,7 @@ Preguntas del análisis:
 4. Diseño de la base de datos y carga en PostgreSQL
 5. Análisis en SQL (lo hago yo; Claude revisa)
 6. Análisis complementario en Excel
-7. Dashboard en Power BI web (Power Query online, modelo semántico y medidas DAX)
+7. Dashboard web en Streamlit (y, si hay cuenta, informe complementario en Power BI web)
 8. README final con conclusiones
 
 ## Cómo quiero que trabajes conmigo (MUY IMPORTANTE)

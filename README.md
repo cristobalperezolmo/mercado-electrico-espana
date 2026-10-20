@@ -18,7 +18,8 @@ públicos de Red Eléctrica (API REData): demanda, generación por tecnología, 
 - **Python** (requests, pandas): extracción y limpieza de datos
 - **PostgreSQL**: almacenamiento y análisis en SQL
 - **Excel**: análisis complementario (Power Query, tablas dinámicas)
-- **Power BI**: dashboard final
+- **Streamlit**: dashboard web interactivo
+- **Power BI**: informe complementario
 - **Git y GitHub**: control de versiones
 
 ## Estructura del proyecto
