@@ -137,6 +137,54 @@ def limpiar_emisiones():
     return df
 
 
+def limpiar_precios():
+    """Precio spot por hora: una fila por hora, con el instante, la fecha y la hora en hora española.
+
+    Desde 2025 la API da el spot cada 15 minutos: se agrega a horas con la media.
+    El PVPC se descarta (solo existe desde junio de 2021).
+    """
+    df = pd.read_csv(CARPETA_RAW / "precios.csv")
+
+    # Solo esperamos dos series; si aparece otra, queremos enterarnos
+    series = set(df["serie"])
+    comprobar(series == {"Precio mercado spot", "PVPC"}, f"series inesperadas: {series}")
+    df = df[df["serie"] == "Precio mercado spot"].copy()
+
+    # Texto -> instante exacto. utc=True unifica los desfases +01:00 y +02:00
+    df["instante"] = pd.to_datetime(df["datetime"], format="ISO8601", utc=True)
+
+    # Inicio de la hora a la que pertenece cada valor. Se redondea en UTC porque
+    # en hora local el "02:00" del cambio de hora de octubre es ambiguo.
+    df["hora_utc"] = df["instante"].dt.floor("h")
+
+    # Una fila por hora: media de los valores de esa hora y cuántos había
+    df = df.groupby("hora_utc")["value"].agg(precio_eur_mwh="mean", valores="count").reset_index()
+
+    # Cada hora debe formarse con 1 valor (hasta 2024) o con 4 cuartos de hora (2025)
+    comprobar(df["valores"].isin([1, 4]).all(), "hay horas con un número incompleto de cuartos de hora")
+
+    # Columnas en hora española: el instante con su desfase, la fecha y la hora (0-23)
+    df["fecha_hora"] = df["hora_utc"].dt.tz_convert("Europe/Madrid")
+    df["fecha"] = df["fecha_hora"].dt.tz_localize(None).dt.normalize()
+    df["hora"] = df["fecha_hora"].dt.hour
+
+    df = df[["fecha_hora", "fecha", "hora", "precio_eur_mwh"]].sort_values("fecha_hora").reset_index(drop=True)
+
+    # Comprobaciones del resultado: están todas las horas del periodo, ni una más ni una menos
+    horas_esperadas = pd.date_range(
+        FECHA_INICIO,
+        pd.Timestamp(FECHA_FIN) + pd.Timedelta(days=1),
+        freq="h",
+        tz="Europe/Madrid",
+        inclusive="left",   # excluye la medianoche del día siguiente al final
+    )
+    comprobar(not df["fecha_hora"].duplicated().any(), "hay horas repetidas")
+    comprobar(set(df["fecha_hora"]) == set(horas_esperadas), "faltan o sobran horas en el periodo")
+    comprobar(df["precio_eur_mwh"].notna().all(), "hay precios vacíos")
+
+    return df
+
+
 # --- Programa principal ---
 
 def main():
@@ -148,6 +196,9 @@ def main():
 
     print("emisiones:")
     guardar(limpiar_emisiones(), "emisiones")
+
+    print("precios:")
+    guardar(limpiar_precios(), "precios")
 
     print("\nLimpieza terminada.")
 
